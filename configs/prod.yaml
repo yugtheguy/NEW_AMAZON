@@ -6,3 +6,6 @@ runtime:
   stall_seconds: 300
 sharding:
   default_rows: 100000
+audit:
+  duckdb_memory_limit: 12GB
+  duckdb_threads: 2
