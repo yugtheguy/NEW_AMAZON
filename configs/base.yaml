@@ -16,6 +16,12 @@ sharding:
 retrieval:
   candidate_schema_version: candidate_v1
   candidate_cap: null
+  version: v1
+  exact_structured:
+    exact_name_max_bucket: 100
+    exact_address_max_bucket: 100
+    structured_max_bucket: 50
+    rare_token_max_df: 50
 features:
   version: feature_v1
 models:

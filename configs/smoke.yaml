@@ -10,6 +10,12 @@ runtime:
   critical_ram_fraction: 0.99
 sharding:
   default_rows: 10
+retrieval:
+  exact_structured:
+    exact_name_max_bucket: 3
+    exact_address_max_bucket: 3
+    structured_max_bucket: 3
+    rare_token_max_df: 3
 normalization:
   expected_dataset_fingerprint: null
   expected_country_rows: null

@@ -12,6 +12,10 @@ Required identity fields are `target_entity_id`, `candidate_s1_entity_id`, `targ
 
 Optional evidence fields include `exact_hit`, `structured_hit`, each retriever's score/rank (`char_name`, `char_sorted`, `word_name`, `address`, `reverse`, `dense`), `retriever_mask`, `retriever_count`, and `fusion_score`. Candidate artifacts contain IDs and numeric metadata, not duplicated business text.
 
+Phase 2A adds boolean signal fields `exact_name_compact`, `exact_name_token_sorted`, `exact_name_core`, `exact_address_compact`, `structured_name_core_number`, `structured_name_compact_number`, `structured_name_core_postal`, `structured_name_compact_postal`, and `structured_name_numeric_signature`. Multiple signals for one identity key are merged into one row. `retriever_count` is the number of retrieval families present (the population count of the defined family bits), not the number of individual signal flags.
+
+Stable `uint16` retriever-mask assignments for `candidate_v1` are: bit 0 exact, bit 1 structured, bit 2 character name, bit 3 token-sorted character name, bit 4 word name, bit 5 address, bit 6 reverse, and bit 7 dense. Changing these assignments requires a candidate contract version change.
+
 Optional retrieval absence uses an explicit `<retriever>_present = false` flag with null/NaN score and rank. Magic sentinels such as `-999` are forbidden. A present score or rank requires the corresponding presence flag to be true.
 
 ## Shard manifest and resume

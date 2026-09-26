@@ -12,8 +12,20 @@ from amazon_er.constants import CANDIDATE_SCHEMA_VERSION, TARGET_SOURCES
 REQUIRED_FIELDS = ("target_entity_id", "candidate_s1_entity_id", "target_source", "country")
 PAIR_KEY = ("target_entity_id", "candidate_s1_entity_id", "target_source")
 RETRIEVERS = ("char_name", "char_sorted", "word_name", "address", "reverse", "dense")
+PHASE2A_PROVENANCE_FIELDS = (
+    "exact_name_compact",
+    "exact_name_token_sorted",
+    "exact_name_core",
+    "exact_address_compact",
+    "structured_name_core_number",
+    "structured_name_compact_number",
+    "structured_name_core_postal",
+    "structured_name_compact_postal",
+    "structured_name_numeric_signature",
+)
 OPTIONAL_FIELDS = frozenset(
     {"exact_hit", "structured_hit", "retriever_mask", "retriever_count", "fusion_score"}
+    | set(PHASE2A_PROVENANCE_FIELDS)
     | {f"{name}_{suffix}" for name in RETRIEVERS for suffix in ("present", "score", "rank")}
 )
 
@@ -51,9 +63,19 @@ def validate_candidates(rows: Iterable[Mapping[str, Any]], *, require_known_sour
                 errors.append(f"row {index}: duplicate candidate pair {key}")
         else:
             seen[key] = row["country"]
-        for flag in ("exact_hit", "structured_hit"):
+        for flag in ("exact_hit", "structured_hit", *PHASE2A_PROVENANCE_FIELDS):
             if flag in row and row[flag] is not None and not isinstance(row[flag], (bool, Integral)):
                 errors.append(f"row {index}: {flag} must be boolean/integer")
+        if "retriever_mask" in row and (
+            not isinstance(row["retriever_mask"], Integral) or isinstance(row["retriever_mask"], bool)
+            or not 0 <= row["retriever_mask"] <= 65535
+        ):
+            errors.append(f"row {index}: retriever_mask must be a uint16-compatible integer")
+        if "retriever_count" in row and (
+            not isinstance(row["retriever_count"], Integral) or isinstance(row["retriever_count"], bool)
+            or row["retriever_count"] < 0
+        ):
+            errors.append(f"row {index}: retriever_count must be a non-negative integer")
         for retriever in RETRIEVERS:
             present = row.get(f"{retriever}_present")
             score, rank = row.get(f"{retriever}_score"), row.get(f"{retriever}_rank")

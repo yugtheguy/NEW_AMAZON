@@ -58,6 +58,15 @@ def validate_config(config: Mapping[str, Any]) -> None:
     suffixes = normalization["legal_suffixes"]
     if not isinstance(suffixes, list) or not suffixes or len(suffixes) != len(set(suffixes)):
         raise ConfigError("normalization.legal_suffixes must be a non-empty unique list")
+    exact_structured = config["retrieval"].get("exact_structured")
+    if not isinstance(exact_structured, Mapping):
+        raise ConfigError("retrieval.exact_structured must be a mapping")
+    for name in (
+        "exact_name_max_bucket", "exact_address_max_bucket",
+        "structured_max_bucket", "rare_token_max_df",
+    ):
+        if int(exact_structured.get(name, 0)) <= 0:
+            raise ConfigError(f"retrieval.exact_structured.{name} must be positive")
 
 
 def load_config(path: str | Path) -> dict[str, Any]:

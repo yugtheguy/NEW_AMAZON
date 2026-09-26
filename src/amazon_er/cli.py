@@ -21,6 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--source")
     run.add_argument("--shard-id")
     run.add_argument("--data-root")
+    run.add_argument("--normalized-root")
     run.add_argument("--output-dir")
     return parser
 
@@ -31,7 +32,8 @@ def main(argv: list[str] | None = None) -> int:
     config = load_config(args.config)
     result = run_stage(
         args.stage, config, country=args.country, source=args.source, shard_id=args.shard_id,
-        data_root=args.data_root, output_dir=args.output_dir, split=args.split,
+        data_root=args.data_root, normalized_root=args.normalized_root,
+        output_dir=args.output_dir, split=args.split,
     )
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0

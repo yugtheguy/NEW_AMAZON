@@ -36,3 +36,13 @@ def test_missing_retriever_semantics():
     assert validate_candidates([candidate(dense_present=False, dense_score=None, dense_rank=None)]).valid
     assert not validate_candidates([candidate(dense_present=False, dense_score=0.0)]).valid
     assert validate_candidates([candidate(dense_present=True, dense_score=0.7, dense_rank=1)]).valid
+
+
+def test_phase2a_provenance_and_compact_retriever_fields():
+    row = candidate(
+        exact_hit=True, structured_hit=True, exact_name_core=True,
+        structured_name_core_number=True, retriever_mask=3, retriever_count=2,
+    )
+    assert validate_candidates([row]).valid
+    assert not validate_candidates([candidate(retriever_mask=70000)]).valid
+    assert not validate_candidates([candidate(retriever_count=-1)]).valid
