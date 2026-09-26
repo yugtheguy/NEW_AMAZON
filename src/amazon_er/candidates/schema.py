@@ -24,7 +24,9 @@ PHASE2A_PROVENANCE_FIELDS = (
     "structured_name_numeric_signature",
 )
 OPTIONAL_FIELDS = frozenset(
-    {"exact_hit", "structured_hit", "retriever_mask", "retriever_count", "fusion_score"}
+    {"exact_hit", "structured_hit", "retriever_mask", "retriever_count", "fusion_score",
+     "translit_hit", "translit_score", "translit_rank", "rare_token_hit",
+     "rare_token_min_df", "rare_token_overlap_count", "numeric_hit", "numeric_overlap_count"}
     | set(PHASE2A_PROVENANCE_FIELDS)
     | {f"{name}_{suffix}" for name in RETRIEVERS for suffix in ("present", "score", "rank")}
 )
@@ -63,7 +65,7 @@ def validate_candidates(rows: Iterable[Mapping[str, Any]], *, require_known_sour
                 errors.append(f"row {index}: duplicate candidate pair {key}")
         else:
             seen[key] = row["country"]
-        for flag in ("exact_hit", "structured_hit", *PHASE2A_PROVENANCE_FIELDS):
+        for flag in ("exact_hit", "structured_hit", "translit_hit", "rare_token_hit", "numeric_hit", *PHASE2A_PROVENANCE_FIELDS):
             if flag in row and row[flag] is not None and not isinstance(row[flag], (bool, Integral)):
                 errors.append(f"row {index}: {flag} must be boolean/integer")
         if "retriever_mask" in row and (
@@ -75,7 +77,13 @@ def validate_candidates(rows: Iterable[Mapping[str, Any]], *, require_known_sour
             not isinstance(row["retriever_count"], Integral) or isinstance(row["retriever_count"], bool)
             or row["retriever_count"] < 0
         ):
-            errors.append(f"row {index}: retriever_count must be a non-negative integer")
+                errors.append(f"row {index}: retriever_count must be a non-negative integer")
+        for score_name in ("translit_score",):
+            if score_name in row and (not isinstance(row[score_name], Real) or isinstance(row[score_name], bool)):
+                errors.append(f"row {index}: {score_name} must be numeric")
+        for rank_name in ("translit_rank",):
+            if rank_name in row and (not isinstance(row[rank_name], Integral) or isinstance(row[rank_name], bool) or row[rank_name] < 1):
+                errors.append(f"row {index}: {rank_name} must be a positive integer")
         for retriever in RETRIEVERS:
             present = row.get(f"{retriever}_present")
             score, rank = row.get(f"{retriever}_score"), row.get(f"{retriever}_rank")

@@ -22,6 +22,21 @@ retrieval:
     exact_address_max_bucket: 100
     structured_max_bucket: 50
     rare_token_max_df: 50
+  lexical:
+    word_ngram_min: 1
+    word_ngram_max: 2
+    min_df: 2
+    kmax: 15
+    transliteration_k: 5
+    query_batch_size: 256
+    name_min_score: 0.05
+    address_min_score: 0.05
+    transliteration_min_score: 0.05
+    rare_token_max_df: 50
+    rare_tokens_per_query: 3
+    numeric_max_df: 50
+    report_memory_limit: 12GB
+    report_threads: 2
 features:
   version: feature_v1
 models:

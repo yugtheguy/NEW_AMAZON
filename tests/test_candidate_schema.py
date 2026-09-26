@@ -46,3 +46,12 @@ def test_phase2a_provenance_and_compact_retriever_fields():
     assert validate_candidates([row]).valid
     assert not validate_candidates([candidate(retriever_mask=70000)]).valid
     assert not validate_candidates([candidate(retriever_count=-1)]).valid
+
+
+def test_phase2b_evidence_fields():
+    assert validate_candidates([candidate(
+        word_name_present=True, word_name_score=0.8, word_name_rank=1,
+        translit_hit=True, translit_score=0.7, translit_rank=2,
+        rare_token_hit=True, rare_token_min_df=3, rare_token_overlap_count=1,
+        numeric_hit=True, numeric_overlap_count=2,
+    )]).valid

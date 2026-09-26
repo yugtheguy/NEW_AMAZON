@@ -67,6 +67,21 @@ def validate_config(config: Mapping[str, Any]) -> None:
     ):
         if int(exact_structured.get(name, 0)) <= 0:
             raise ConfigError(f"retrieval.exact_structured.{name} must be positive")
+    lexical = config["retrieval"].get("lexical")
+    if not isinstance(lexical, Mapping):
+        raise ConfigError("retrieval.lexical must be a mapping")
+    for name in (
+        "word_ngram_min", "word_ngram_max", "min_df", "kmax", "transliteration_k",
+        "query_batch_size", "rare_token_max_df", "rare_tokens_per_query", "numeric_max_df",
+        "report_threads",
+    ):
+        if int(lexical.get(name, 0)) <= 0:
+            raise ConfigError(f"retrieval.lexical.{name} must be positive")
+    if int(lexical["word_ngram_min"]) > int(lexical["word_ngram_max"]):
+        raise ConfigError("retrieval.lexical word ngram range is invalid")
+    for name in ("name_min_score", "address_min_score", "transliteration_min_score"):
+        if not 0 <= float(lexical[name]) <= 1:
+            raise ConfigError(f"retrieval.lexical.{name} must be in [0, 1]")
 
 
 def load_config(path: str | Path) -> dict[str, Any]:

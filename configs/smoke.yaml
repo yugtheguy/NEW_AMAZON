@@ -16,6 +16,16 @@ retrieval:
     exact_address_max_bucket: 3
     structured_max_bucket: 3
     rare_token_max_df: 3
+  lexical:
+    min_df: 1
+    kmax: 3
+    transliteration_k: 2
+    query_batch_size: 2
+    rare_token_max_df: 3
+    rare_tokens_per_query: 2
+    numeric_max_df: 3
+    report_memory_limit: 1GB
+    report_threads: 1
 normalization:
   expected_dataset_fingerprint: null
   expected_country_rows: null
