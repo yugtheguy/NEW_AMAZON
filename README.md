@@ -4,7 +4,7 @@ Production-oriented, target-centric entity resolution for assigning noisy Source
 
 The frozen architecture is a multi-stage cascade: sparse retrieval first, learned pair and collective scoring next, then conditional multilingual dense rescue and cross-encoder reranking for ambiguous cases only. Development happens in Git with Codex; heavy execution will use thin Kaggle launchers around repository code.
 
-**Status:** Phase 0A repository bootstrap. No dataset results or model metrics have been measured.
+**Status:** Phase 1 normalization implementation; full production normalization runs on Kaggle. No retrieval or model metrics have been measured.
 
 ## Setup
 
@@ -20,6 +20,7 @@ python scripts/smoke_test.py
 pytest
 python -m amazon_er.cli run --stage healthcheck --config configs/smoke.yaml
 python -m amazon_er.cli run --stage data-audit --config configs/prod.yaml --data-root "<DATASET_ROOT>"
+python -m amazon_er.cli run --stage normalize --config configs/prod.yaml --data-root "<DATASET_ROOT>"
 ```
 
 See [the architecture](docs/ARCHITECTURE.md), [implementation plan](docs/IMPLEMENTATION_PLAN.md), and [project rules](docs/PROJECT_RULES.md).

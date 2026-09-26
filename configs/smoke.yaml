@@ -6,5 +6,12 @@ paths:
 runtime:
   heartbeat_seconds: 1
   stall_seconds: 10
+  warning_ram_fraction: 0.95
+  critical_ram_fraction: 0.99
 sharding:
   default_rows: 10
+normalization:
+  expected_dataset_fingerprint: null
+  expected_country_rows: null
+  shard_rows: 3
+  input_block_size_bytes: 4096

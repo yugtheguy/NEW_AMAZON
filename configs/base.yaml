@@ -31,3 +31,41 @@ audit:
   fingerprint_sample_bytes: 1048576
   duckdb_memory_limit: 1GB
   duckdb_threads: 2
+normalization:
+  contract_version: normalization_v1
+  stage_version: v1
+  expected_dataset_fingerprint: 86bb7ec55a54734cf1990db8673e202114040d86441b516515c673779b4bf0eb
+  shard_rows: 300000
+  input_block_size_bytes: 8388608
+  parquet_compression: zstd
+  parquet_compression_level: 3
+  postal_like_min_digits: 4
+  postal_like_max_digits: 8
+  legal_suffixes:
+    - ltd
+    - limited
+    - pvt
+    - private
+    - llp
+    - llc
+    - inc
+    - incorporated
+    - corp
+    - corporation
+    - co
+    - company
+    - sa
+    - sas
+    - sarl
+    - sasu
+    - eurl
+    - sci
+  expected_country_rows:
+    train:
+      source1: {India: 883188, US: 1323633}
+      source2: {India: 2017799, US: 3016817}
+      source3: {India: 2115547, US: 3170056}
+    test:
+      source1: {France: 259452, India: 809986, US: 663106}
+      source2: {France: 703378, India: 2312565, US: 1871330}
+      source3: {France: 731615, India: 2405000, US: 1945701}

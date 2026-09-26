@@ -29,6 +29,7 @@ class ShardManifest:
     artifact_hash: str
     status: str
     created_at: str
+    split: str | None = None
 
     @classmethod
     def complete(cls, **kwargs: Any) -> "ShardManifest":

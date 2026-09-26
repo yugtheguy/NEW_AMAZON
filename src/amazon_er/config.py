@@ -38,7 +38,7 @@ def _read_yaml(path: Path) -> dict[str, Any]:
 
 
 def validate_config(config: Mapping[str, Any]) -> None:
-    required = {"project", "paths", "runtime", "sharding", "retrieval", "features", "models", "decision", "audit"}
+    required = {"project", "paths", "runtime", "sharding", "retrieval", "features", "models", "decision", "audit", "normalization"}
     missing = sorted(required - config.keys())
     if missing:
         raise ConfigError(f"Missing configuration sections: {missing}")
@@ -50,6 +50,14 @@ def validate_config(config: Mapping[str, Any]) -> None:
         raise ConfigError("runtime.seed must be non-negative")
     if int(config["sharding"]["default_rows"]) <= 0:
         raise ConfigError("sharding.default_rows must be positive")
+    normalization = config["normalization"]
+    if int(normalization["shard_rows"]) <= 0:
+        raise ConfigError("normalization.shard_rows must be positive")
+    if not 1 <= int(normalization["postal_like_min_digits"]) <= int(normalization["postal_like_max_digits"]):
+        raise ConfigError("normalization postal digit lengths are invalid")
+    suffixes = normalization["legal_suffixes"]
+    if not isinstance(suffixes, list) or not suffixes or len(suffixes) != len(set(suffixes)):
+        raise ConfigError("normalization.legal_suffixes must be a non-empty unique list")
 
 
 def load_config(path: str | Path) -> dict[str, Any]:
