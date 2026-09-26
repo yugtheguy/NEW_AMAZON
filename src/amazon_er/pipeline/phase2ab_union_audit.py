@@ -148,7 +148,7 @@ def _create_base_views(connection: Any, normalized: list[Any], exact: list[Candi
     connection.execute(f"CREATE TEMP VIEW target_train AS {target_train_sql}")
     connection.execute(f"CREATE TEMP VIEW target_all AS {target_all_sql}")
     connection.execute(
-        f"CREATE TEMP VIEW phase2a AS SELECT DISTINCT target_entity_id, candidate_s1_entity_id, "
+        f"CREATE TEMP VIEW phase2a AS SELECT target_entity_id, candidate_s1_entity_id, "
         f"target_source, country FROM read_parquet({_paths_sql([x.path for x in exact])}, union_by_name=true)"
     )
     connection.execute(
@@ -181,13 +181,14 @@ def _create_base_views(connection: Any, normalized: list[Any], exact: list[Candi
 
 def _union_metrics(connection: Any) -> tuple[dict[str, Any], dict[str, Any]]:
     connection.execute(
-        "CREATE TEMP TABLE gt_flags AS WITH b AS (SELECT target_entity_id, candidate_s1_entity_id, "
-        "target_source, country, min(blocker_rank) AS blocker_rank FROM phase2b GROUP BY ALL) "
+        "CREATE TEMP TABLE gt_flags AS WITH a AS (SELECT DISTINCT g.source1_entity_id,g.target_entity_id,g.target_source,g.country "
+        "FROM gt_pairs g JOIN phase2a p ON p.target_entity_id=g.target_entity_id AND p.candidate_s1_entity_id=g.source1_entity_id "
+        "AND p.target_source=g.target_source AND p.country=g.country), b AS (SELECT g.source1_entity_id,g.target_entity_id,g.target_source,g.country, "
+        "min(p.blocker_rank) AS blocker_rank FROM gt_pairs g JOIN phase2b p ON p.target_entity_id=g.target_entity_id "
+        "AND p.candidate_s1_entity_id=g.source1_entity_id AND p.target_source=g.target_source AND p.country=g.country GROUP BY ALL) "
         "SELECT g.*, (a.target_entity_id IS NOT NULL) AS a_hit, coalesce(b.blocker_rank, 255) AS b_rank "
-        "FROM gt_pairs g LEFT JOIN phase2a a ON a.target_entity_id=g.target_entity_id "
-        "AND a.candidate_s1_entity_id=g.source1_entity_id AND a.target_source=g.target_source AND a.country=g.country "
-        "LEFT JOIN b ON b.target_entity_id=g.target_entity_id AND b.candidate_s1_entity_id=g.source1_entity_id "
-        "AND b.target_source=g.target_source AND b.country=g.country"
+        "FROM gt_pairs g LEFT JOIN a USING(source1_entity_id,target_entity_id,target_source,country) "
+        "LEFT JOIN b USING(source1_entity_id,target_entity_id,target_source,country)"
     )
     select = (
         "count(*) AS gt_pairs, count(*) FILTER (a_hit) AS phase2a_count, "
@@ -214,21 +215,21 @@ def _union_metrics(connection: Any) -> tuple[dict[str, Any], dict[str, Any]]:
     return {"overall": overall, "by_country_source": breakdown}, by_k
 
 
-def _candidate_volume(connection: Any) -> dict[str, Any]:
-    connection.execute(
-        "CREATE TEMP TABLE candidate_min_rank AS SELECT target_entity_id, candidate_s1_entity_id, "
-        "target_source, country, max(is_a) AS is_a, min(b_rank) AS b_rank FROM ("
-        "SELECT target_entity_id,candidate_s1_entity_id,target_source,country,true AS is_a,255::UTINYINT AS b_rank FROM phase2a "
-        "UNION ALL SELECT target_entity_id,candidate_s1_entity_id,target_source,country,false,blocker_rank FROM phase2b"
-        ") GROUP BY 1,2,3,4"
-    )
-    counts = ", ".join(
-        f"count(*) FILTER (is_a OR b_rank<={k})::BIGINT AS c{k}" for k in VOLUME_K_VALUES
-    )
-    connection.execute(
-        f"CREATE TEMP TABLE candidate_counts AS SELECT target_entity_id,target_source,country,{counts} "
-        "FROM candidate_min_rank GROUP BY 1,2,3"
-    )
+def _candidate_volume(connection: Any, exact: list[CandidateShard], blocker: list[CandidateShard]) -> dict[str, Any]:
+    exact_by_id = {(x.split, x.country, x.source, x.shard_id): x.path for x in exact}
+    blocker_by_id = {(x.split, x.country, x.source, x.shard_id): x.path for x in blocker}
+    parts = []
+    counts = ", ".join(f"count(*) FILTER (is_a OR b_rank<={k})::BIGINT AS c{k}" for k in VOLUME_K_VALUES)
+    for identity in sorted(exact_by_id):
+        a_path, b_path = exact_by_id[identity], blocker_by_id[identity]
+        parts.append(
+            f"SELECT target_entity_id,target_source,country,{counts} FROM (SELECT target_entity_id,candidate_s1_entity_id,"
+            "target_source,country,max(is_a) AS is_a,min(b_rank) AS b_rank FROM ("
+            f"SELECT target_entity_id,candidate_s1_entity_id,target_source,country,true AS is_a,255::UTINYINT AS b_rank FROM read_parquet({_paths_sql([a_path])}) UNION ALL "
+            f"SELECT target_entity_id,candidate_s1_entity_id,target_source,country,false,blocker_rank FROM read_parquet({_paths_sql([b_path])})"
+            ") GROUP BY 1,2,3,4) GROUP BY 1,2,3"
+        )
+    connection.execute("CREATE TEMP TABLE candidate_counts AS " + " UNION ALL ".join(parts))
     universe_count = connection.execute("SELECT count(*) FROM target_all").fetchone()[0]
     result: dict[str, Any] = {}
     for k in VOLUME_K_VALUES:
@@ -428,7 +429,7 @@ def run_phase2ab_union_audit(cfg: Mapping[str, Any], *, normalized_root: str | N
         _configure(connection, cfg, temporary)
         _create_base_views(connection, normalized, exact, blocker, paths.train_ground_truth)
         union_metrics, union_by_k = _union_metrics(connection)
-        volume = _candidate_volume(connection)
+        volume = _candidate_volume(connection, exact, blocker)
         ceiling, transliteration = _token_diagnostics(connection, cfg)
     finally:
         connection.close()
