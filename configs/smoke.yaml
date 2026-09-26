@@ -16,18 +16,20 @@ retrieval:
     exact_address_max_bucket: 3
     structured_max_bucket: 3
     rare_token_max_df: 3
-  lexical:
-    min_df: 1
-    kmax: 3
-    transliteration_k: 2
-    query_batch_size: 2
-    rare_token_max_df: 3
-    rare_tokens_per_query: 2
-    rare_candidate_limit: 10
-    numeric_max_df: 3
-    numeric_candidate_limit: 10
-    report_memory_limit: 1GB
-    report_threads: 1
+  multikey:
+    target_batch_rows: 2
+    min_name_token_length: 3
+    min_address_token_length: 2
+    rare_name_token_max_df: 10
+    rare_address_token_max_df: 3
+    rare_name_bucket_cap: 3
+    name_number_bucket_cap: 3
+    number_address_bucket_cap: 3
+    name_address_bucket_cap: 3
+    address_pair_bucket_cap: 3
+    translit_name_bucket_cap: 3
+    translit_name_number_bucket_cap: 3
+    blocker_max_candidates_per_target: 5
 normalization:
   expected_dataset_fingerprint: null
   expected_country_rows: null

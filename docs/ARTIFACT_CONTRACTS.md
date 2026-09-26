@@ -16,9 +16,7 @@ Phase 2A adds boolean signal fields `exact_name_compact`, `exact_name_token_sort
 
 Stable `uint16` retriever-mask assignments for `candidate_v1` are: bit 0 exact, bit 1 structured, bit 2 character name, bit 3 token-sorted character name, bit 4 word name, bit 5 address, bit 6 reverse, and bit 7 dense. Changing these assignments requires a candidate contract version change.
 
-Phase 2B writes retriever-specific `candidate_v1` shards below `retrieval/v1/{name_word,address_word,transliteration,rare_token,numeric}`. Name-word and address-word rows contain a float32 score and uint8 rank. Transliteration rows contain `translit_hit`, float32 `translit_score`, and uint8 `translit_rank`; rare-token rows contain `rare_token_hit`, uint32 `rare_token_min_df`, and uint8 `rare_token_overlap_count`; numeric rows contain `numeric_hit` and uint8 `numeric_overlap_count`. Text features are never duplicated into candidate rows.
-
-Rare-token and numeric channels use deterministic per-channel explosion limits after ranking by evidence strength. These are operational safety limits, not the final cross-retriever candidate cap.
+Phase 2B writes `multikey_blocker` shards with IDs plus blocker flags, signal count, minimum/best key DF, summed IDF weight, and deterministic blocker rank. Key strings never appear in candidate artifacts. The blocker remains independent of the stable Phase-2A retriever mask.
 
 Optional retrieval absence uses an explicit `<retriever>_present = false` flag with null/NaN score and rank. Magic sentinels such as `-999` are forbidden. A present score or rank requires the corresponding presence flag to be true.
 

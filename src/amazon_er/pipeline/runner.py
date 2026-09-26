@@ -10,17 +10,16 @@ from amazon_er.infra.resources import ResourceMonitor
 from amazon_er.infra.seed import set_global_seed
 from amazon_er.pipeline.normalization import run_normalization
 from amazon_er.pipeline.exact_structured import run_exact_structured_retrieval
-from amazon_er.pipeline.lexical import run_lexical_retrieval
+from amazon_er.pipeline.multikey import run_multikey_retrieval
 
 
 def run_stage(
     stage: str, config: Mapping[str, Any], *, country: str | None = None,
     source: str | None = None, shard_id: str | None = None,
     data_root: str | None = None, normalized_root: str | None = None,
-    exact_structured_root: str | None = None,
     output_dir: str | None = None, split: str | None = None,
 ) -> dict[str, Any]:
-    if stage not in {"healthcheck", "config-check", "data-audit", "normalize", "retrieve-exact-structured", "retrieve-lexical"}:
+    if stage not in {"healthcheck", "config-check", "data-audit", "normalize", "retrieve-exact-structured", "retrieve-multikey"}:
         raise ValueError(f"Stage {stage!r} is not implemented")
     set_global_seed(int(config["runtime"]["seed"]))
     if stage == "data-audit":
@@ -36,10 +35,9 @@ def run_stage(
             output_dir=output_dir, split=split, source=source,
             country=country, shard_id=shard_id,
         )
-    if stage == "retrieve-lexical":
-        return run_lexical_retrieval(
-            config, normalized_root=normalized_root,
-            exact_structured_root=exact_structured_root, data_root=data_root,
+    if stage == "retrieve-multikey":
+        return run_multikey_retrieval(
+            config, normalized_root=normalized_root, data_root=data_root,
             output_dir=output_dir, split=split, source=source,
             country=country, shard_id=shard_id,
         )

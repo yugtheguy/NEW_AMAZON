@@ -22,23 +22,24 @@ retrieval:
     exact_address_max_bucket: 100
     structured_max_bucket: 50
     rare_token_max_df: 50
-  lexical:
-    word_ngram_min: 1
-    word_ngram_max: 2
-    min_df: 2
-    kmax: 15
-    transliteration_k: 5
-    query_batch_size: 256
-    name_min_score: 0.05
-    address_min_score: 0.05
-    transliteration_min_score: 0.05
-    rare_token_max_df: 50
-    rare_tokens_per_query: 3
-    rare_candidate_limit: 50
-    numeric_max_df: 50
-    numeric_candidate_limit: 50
-    report_memory_limit: 12GB
-    report_threads: 2
+  multikey:
+    version: v1
+    target_batch_rows: 1000
+    min_name_token_length: 4
+    min_address_token_length: 3
+    max_name_tokens_per_target: 2
+    max_address_tokens_per_target: 2
+    max_numeric_tokens_per_target: 2
+    rare_name_token_max_df: 50
+    rare_address_token_max_df: 50
+    rare_name_bucket_cap: 50
+    name_number_bucket_cap: 100
+    number_address_bucket_cap: 100
+    name_address_bucket_cap: 100
+    address_pair_bucket_cap: 100
+    translit_name_bucket_cap: 50
+    translit_name_number_bucket_cap: 100
+    blocker_max_candidates_per_target: 50
 features:
   version: feature_v1
 models:

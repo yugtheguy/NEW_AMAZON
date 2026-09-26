@@ -25,8 +25,10 @@ PHASE2A_PROVENANCE_FIELDS = (
 )
 OPTIONAL_FIELDS = frozenset(
     {"exact_hit", "structured_hit", "retriever_mask", "retriever_count", "fusion_score",
-     "translit_hit", "translit_score", "translit_rank", "rare_token_hit",
-     "rare_token_min_df", "rare_token_overlap_count", "numeric_hit", "numeric_overlap_count"}
+     "blocker_hit", "block_rare_name_hit", "block_name_number_hit",
+     "block_number_address_hit", "block_name_address_hit", "block_address_pair_hit",
+     "block_translit_name_hit", "block_translit_name_number_hit", "blocker_signal_count",
+     "blocker_best_key_df", "blocker_min_key_df", "blocker_sum_idf", "blocker_rank"}
     | set(PHASE2A_PROVENANCE_FIELDS)
     | {f"{name}_{suffix}" for name in RETRIEVERS for suffix in ("present", "score", "rank")}
 )
@@ -65,7 +67,10 @@ def validate_candidates(rows: Iterable[Mapping[str, Any]], *, require_known_sour
                 errors.append(f"row {index}: duplicate candidate pair {key}")
         else:
             seen[key] = row["country"]
-        for flag in ("exact_hit", "structured_hit", "translit_hit", "rare_token_hit", "numeric_hit", *PHASE2A_PROVENANCE_FIELDS):
+        for flag in ("exact_hit", "structured_hit", "blocker_hit", "block_rare_name_hit",
+                     "block_name_number_hit", "block_number_address_hit", "block_name_address_hit",
+                     "block_address_pair_hit", "block_translit_name_hit",
+                     "block_translit_name_number_hit", *PHASE2A_PROVENANCE_FIELDS):
             if flag in row and row[flag] is not None and not isinstance(row[flag], (bool, Integral)):
                 errors.append(f"row {index}: {flag} must be boolean/integer")
         if "retriever_mask" in row and (
@@ -78,10 +83,10 @@ def validate_candidates(rows: Iterable[Mapping[str, Any]], *, require_known_sour
             or row["retriever_count"] < 0
         ):
                 errors.append(f"row {index}: retriever_count must be a non-negative integer")
-        for score_name in ("translit_score",):
+        for score_name in ("blocker_sum_idf",):
             if score_name in row and (not isinstance(row[score_name], Real) or isinstance(row[score_name], bool)):
                 errors.append(f"row {index}: {score_name} must be numeric")
-        for rank_name in ("translit_rank",):
+        for rank_name in ("blocker_rank",):
             if rank_name in row and (not isinstance(row[rank_name], Integral) or isinstance(row[rank_name], bool) or row[rank_name] < 1):
                 errors.append(f"row {index}: {rank_name} must be a positive integer")
         for retriever in RETRIEVERS:
