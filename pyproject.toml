@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "amazon-er"
+version = "0.1.0"
+description = "Restartable business entity resolution pipeline for the Amazon ML Challenge 2026"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+  "PyYAML>=6.0,<7",
+  "psutil>=5.9,<8",
+]
+
+[project.optional-dependencies]
+data = ["pandas>=2.0,<3", "pyarrow>=14,<22"]
+retrieval = []
+models = []
+gpu = []
+dev = ["pytest>=8,<9"]
+
+[project.scripts]
+amazon-er = "amazon_er.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-q --basetemp=.pytest_cache/tmp"
+testpaths = ["tests"]

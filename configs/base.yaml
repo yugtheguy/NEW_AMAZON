@@ -1,0 +1,28 @@
+project:
+  name: amazon-er
+  version: 0.1.0
+paths:
+  data_root: data
+  artifact_root: artifacts
+  log_root: logs
+runtime:
+  seed: 2026
+  warning_ram_fraction: 0.70
+  critical_ram_fraction: 0.80
+  heartbeat_seconds: 30
+  stall_seconds: 300
+sharding:
+  default_rows: 100000
+retrieval:
+  candidate_schema_version: candidate_v1
+  candidate_cap: null
+features:
+  version: feature_v1
+models:
+  stage1_version: lgb_stage1
+  stage2_version: lgb_stage2
+  dense_model: intfloat/multilingual-e5-base
+  cross_encoder_model: BAAI/bge-reranker-v2-m3
+decision:
+  beta: 0.5
+  threshold: null

@@ -1,0 +1,10 @@
+extends: base.yaml
+project:
+  profile: smoke
+paths:
+  artifact_root: artifacts/smoke
+runtime:
+  heartbeat_seconds: 1
+  stall_seconds: 10
+sharding:
+  default_rows: 10

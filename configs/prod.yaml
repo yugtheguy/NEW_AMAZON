@@ -1,0 +1,8 @@
+extends: base.yaml
+project:
+  profile: production
+runtime:
+  heartbeat_seconds: 30
+  stall_seconds: 300
+sharding:
+  default_rows: 100000
