@@ -26,3 +26,8 @@ models:
 decision:
   beta: 0.5
   threshold: null
+audit:
+  version: v1
+  fingerprint_sample_bytes: 1048576
+  duckdb_memory_limit: 1GB
+  duckdb_threads: 2

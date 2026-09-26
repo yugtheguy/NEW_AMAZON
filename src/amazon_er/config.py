@@ -38,7 +38,7 @@ def _read_yaml(path: Path) -> dict[str, Any]:
 
 
 def validate_config(config: Mapping[str, Any]) -> None:
-    required = {"project", "paths", "runtime", "sharding", "retrieval", "features", "models", "decision"}
+    required = {"project", "paths", "runtime", "sharding", "retrieval", "features", "models", "decision", "audit"}
     missing = sorted(required - config.keys())
     if missing:
         raise ConfigError(f"Missing configuration sections: {missing}")

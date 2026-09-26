@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-data = ["pandas>=2.0,<3", "pyarrow>=14,<22"]
+data = ["duckdb>=1.2,<2"]
 retrieval = []
 models = []
 gpu = []

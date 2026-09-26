@@ -4,7 +4,6 @@ Kaggle notebooks are thin launchers, not homes for production algorithms. A run 
 
 ```bash
 python -m pip install -e .
-python -m amazon_er.cli run --stage data_audit --config configs/prod.yaml
+python -m pip install -e ".[data]"
+python -m amazon_er.cli run --stage data-audit --config configs/prod.yaml --data-root /kaggle/input/<dataset>
 ```
-
-`data_audit` is a planned stage and is not registered in Phase 0A; use `scripts/data_audit.py` for explicit files until Phase 0B locks the dataset contract.

@@ -19,6 +19,7 @@ python -m pip install -e ".[dev]"
 python scripts/smoke_test.py
 pytest
 python -m amazon_er.cli run --stage healthcheck --config configs/smoke.yaml
+python -m amazon_er.cli run --stage data-audit --config configs/prod.yaml --data-root "<DATASET_ROOT>"
 ```
 
 See [the architecture](docs/ARCHITECTURE.md), [implementation plan](docs/IMPLEMENTATION_PLAN.md), and [project rules](docs/PROJECT_RULES.md).
