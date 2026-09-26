@@ -73,7 +73,7 @@ def validate_config(config: Mapping[str, Any]) -> None:
     for name in (
         "word_ngram_min", "word_ngram_max", "min_df", "kmax", "transliteration_k",
         "query_batch_size", "rare_token_max_df", "rare_tokens_per_query", "numeric_max_df",
-        "report_threads",
+        "rare_candidate_limit", "numeric_candidate_limit", "report_threads",
     ):
         if int(lexical.get(name, 0)) <= 0:
             raise ConfigError(f"retrieval.lexical.{name} must be positive")

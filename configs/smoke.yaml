@@ -23,7 +23,9 @@ retrieval:
     query_batch_size: 2
     rare_token_max_df: 3
     rare_tokens_per_query: 2
+    rare_candidate_limit: 10
     numeric_max_df: 3
+    numeric_candidate_limit: 10
     report_memory_limit: 1GB
     report_threads: 1
 normalization:

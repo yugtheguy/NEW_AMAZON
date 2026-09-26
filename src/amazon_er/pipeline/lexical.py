@@ -204,12 +204,18 @@ def retrieve_batch(index: CountryIndex, rows: list[dict[str, Any]], behavior: Ma
         for token in rare_tokens:
             for candidate in index.rare_postings[token]:
                 rare_candidates[candidate].append(index.rare_df[token])
-        for candidate, dfs in sorted(rare_candidates.items(), key=lambda item: index.ids[item[0]]):
+        ordered_rare = sorted(
+            rare_candidates.items(), key=lambda item: (-len(item[1]), min(item[1]), index.ids[item[0]]),
+        )[:int(behavior["rare_candidate_limit"])]
+        for candidate, dfs in ordered_rare:
             output["rare_token"].append({"target_entity_id": target_id, "candidate_s1_entity_id": index.ids[candidate], "rare_token_hit": True, "rare_token_min_df": min(dfs), "rare_token_overlap_count": len(dfs)})
         numeric_candidates: Counter[int] = Counter()
         for key in _numeric_keys(rows[row_number]):
             numeric_candidates.update(index.numeric_postings.get(key, ()))
-        for candidate, overlap in sorted(numeric_candidates.items(), key=lambda item: index.ids[item[0]]):
+        ordered_numeric = sorted(
+            numeric_candidates.items(), key=lambda item: (-item[1], index.ids[item[0]]),
+        )[:int(behavior["numeric_candidate_limit"])]
+        for candidate, overlap in ordered_numeric:
             output["numeric"].append({"target_entity_id": target_id, "candidate_s1_entity_id": index.ids[candidate], "numeric_hit": True, "numeric_overlap_count": overlap})
     return output
 

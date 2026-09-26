@@ -34,7 +34,9 @@ retrieval:
     transliteration_min_score: 0.05
     rare_token_max_df: 50
     rare_tokens_per_query: 3
+    rare_candidate_limit: 50
     numeric_max_df: 50
+    numeric_candidate_limit: 50
     report_memory_limit: 12GB
     report_threads: 2
 features:
