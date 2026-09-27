@@ -74,6 +74,11 @@ def test_phase2ab_union_and_diagnostics(tmp_path):
     assert overall["phase2b_only"]["count"] == 1
     assert overall["union"]["count"] == 3
     assert result["union_by_k"]["5"]["union_count"] == 3
+    oracle = result["oracle_macro_f0_5_ceiling"]
+    assert oracle["evaluation_s1_entities"] == 5
+    assert oracle["phase2a"] == 0.4
+    assert oracle["phase2b_k50"] == 0.4
+    assert oracle["union_by_k"]["5"] == 0.6
     assert result["candidate_volume_by_k"]["5"]["target_count"] == 8
     assert result["raw_coverage_semantics"]["label"] == "RESTRICTED_KEY_COVERAGE"
     assert result["true_ceiling_diagnostic"]["current"]["covered_count"] == 2

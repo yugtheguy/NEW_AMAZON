@@ -179,7 +179,14 @@ def _create_base_views(connection: Any, normalized: list[Any], exact: list[Candi
         raise Phase2ABAuditError(f"GT target resolution mismatch: parsed={raw_count}, normalized={joined_count}")
 
 
-def _union_metrics(connection: Any) -> tuple[dict[str, Any], dict[str, Any]]:
+def _oracle_score(column: str) -> str:
+    return (
+        f"CASE WHEN gt_pairs=0 THEN 1.0 WHEN {column}=0 THEN 0.0 "
+        f"ELSE 1.25*{column}/(0.25*gt_pairs+{column}) END"
+    )
+
+
+def _union_metrics(connection: Any) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     connection.execute(
         "CREATE TEMP TABLE gt_flags AS WITH a AS (SELECT DISTINCT g.source1_entity_id,g.target_entity_id,g.target_source,g.country "
         "FROM gt_pairs g JOIN phase2a p ON p.target_entity_id=g.target_entity_id AND p.candidate_s1_entity_id=g.source1_entity_id "
@@ -212,7 +219,32 @@ def _union_metrics(connection: Any) -> tuple[dict[str, Any], dict[str, Any]]:
             "unique_beyond_phase2a_count": int(unique_count),
             "unique_beyond_phase2a_recall": _ratio(int(unique_count), total),
         }
-    return {"overall": overall, "by_country_source": breakdown}, by_k
+    recovered_columns = [
+        "count(*) FILTER (a_hit)::BIGINT AS phase2a",
+        "count(*) FILTER (b_rank<=50)::BIGINT AS phase2b_k50",
+        *[f"count(*) FILTER (a_hit OR b_rank<={k})::BIGINT AS union_k{k}" for k in K_VALUES],
+    ]
+    connection.execute(
+        "CREATE TEMP TABLE entity_oracle_counts AS WITH recovered AS (SELECT source1_entity_id,"
+        "count(*)::BIGINT AS gt_pairs," + ",".join(recovered_columns) + " FROM gt_flags GROUP BY source1_entity_id) "
+        "SELECT u.entity_id,coalesce(r.gt_pairs,0)::BIGINT AS gt_pairs,coalesce(r.phase2a,0)::BIGINT AS phase2a,"
+        "coalesce(r.phase2b_k50,0)::BIGINT AS phase2b_k50," + ",".join(
+            f"coalesce(r.union_k{k},0)::BIGINT AS union_k{k}" for k in K_VALUES
+        ) + " FROM (SELECT DISTINCT entity_id FROM s1_train) u LEFT JOIN recovered r ON r.source1_entity_id=u.entity_id"
+    )
+    oracle_row = _rows(connection, "SELECT count(*) AS evaluation_s1_entities," + ",".join([
+        f"avg({_oracle_score('phase2a')}) AS phase2a",
+        f"avg({_oracle_score('phase2b_k50')}) AS phase2b_k50",
+        *[f"avg({_oracle_score(f'union_k{k}')}) AS union_k{k}" for k in K_VALUES],
+    ]) + " FROM entity_oracle_counts")[0]
+    oracle = {
+        "definition": "Oracle predictions contain only recovered GT targets; entity F0.5 is averaged over every train S1 entity, including empty-GT and zero-candidate entities.",
+        "evaluation_s1_entities": int(oracle_row["evaluation_s1_entities"]),
+        "phase2a": float(oracle_row["phase2a"]),
+        "phase2b_k50": float(oracle_row["phase2b_k50"]),
+        "union_by_k": {str(k): float(oracle_row[f"union_k{k}"]) for k in K_VALUES},
+    }
+    return {"overall": overall, "by_country_source": breakdown}, by_k, oracle
 
 
 def _candidate_volume(connection: Any, exact: list[CandidateShard], blocker: list[CandidateShard]) -> dict[str, Any]:
@@ -388,6 +420,9 @@ def _markdown(summary: Mapping[str, Any]) -> str:
         f"A only: {o['phase2a_only']['count']} / {o['phase2a_only']['recall']}", f"B only: {o['phase2b_only']['count']} / {o['phase2b_only']['recall']}", "",
         "## UNION", f"A ∪ B: {o['union']['count']} / {o['union']['recall']}", "", "## UNION BY K", "", "| K | union count | recall | unique beyond A |", "|---:|---:|---:|---:|"]
     for k, item in summary["union_by_k"].items(): lines.append(f"| {k} | {item['union_count']} | {item['union_recall']} | {item['unique_beyond_phase2a_count']} |")
+    oracle = summary["oracle_macro_f0_5_ceiling"]
+    lines += ["", "## ORACLE MACRO-F0.5 CEILING", "", f"Evaluation S1 entities: {oracle['evaluation_s1_entities']}", f"Phase 2A: {oracle['phase2a']}", f"Phase 2B K50: {oracle['phase2b_k50']}", "", "| union K | oracle macro-F0.5 |", "|---:|---:|"]
+    for k, value in oracle["union_by_k"].items(): lines.append(f"| {k} | {value} |")
     lines += ["", "## COUNTRY/SOURCE", "", "| partition | GT | A recall | B K50 recall | union recall |", "|---|---:|---:|---:|---:|"]
     for label, item in summary["union_metrics"]["by_country_source"].items(): lines.append(f"| {label} | {item['gt_pairs']} | {item['phase2a']['recall']} | {item['phase2b_k50']['recall']} | {item['union']['recall']} |")
     lines += ["", "## CANDIDATE VOLUME BY K", "", "| K | pairs | avg | p50 | p90 | p95 | p99 | max |", "|---:|---:|---:|---:|---:|---:|---:|---:|"]
@@ -428,7 +463,7 @@ def run_phase2ab_union_audit(cfg: Mapping[str, Any], *, normalized_root: str | N
     try:
         _configure(connection, cfg, temporary)
         _create_base_views(connection, normalized, exact, blocker, paths.train_ground_truth)
-        union_metrics, union_by_k = _union_metrics(connection)
+        union_metrics, union_by_k, oracle_f05 = _union_metrics(connection)
         volume = _candidate_volume(connection, exact, blocker)
         ceiling, transliteration = _token_diagnostics(connection, cfg)
     finally:
@@ -440,7 +475,8 @@ def run_phase2ab_union_audit(cfg: Mapping[str, Any], *, normalized_root: str | N
     summary = {
         "status": "complete", "stage": STAGE,
         "inputs": {"normalized_shards": len(normalized), "phase2a_shards": len(exact), "phase2b_shards": len(blocker)},
-        "union_metrics": union_metrics, "union_by_k": union_by_k, "candidate_volume_by_k": volume,
+        "union_metrics": union_metrics, "union_by_k": union_by_k,
+        "oracle_macro_f0_5_ceiling": oracle_f05, "candidate_volume_by_k": volume,
         "raw_coverage_semantics": {
             "label": "RESTRICTED_KEY_COVERAGE", "before_bucket_cap_pruning": True,
             "after_df_eligibility": True, "after_token_selection_limits": True,
